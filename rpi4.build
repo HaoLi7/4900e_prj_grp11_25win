@@ -283,6 +283,7 @@ spi-bcm2711.so
 /usr/sbin/fs-nfs3=fs-nfs3
 /usr/bin/telnet=telnet
 /bin/scp=scp
+/usr/bin/ssh=ssh
 /usr/sbin/sshd=sshd
 /usr/sbin/tcpdump=tcpdump
 wpa_cli=wpa_cli-2.9
@@ -309,103 +310,6 @@ openssl     tags=*
 /sbin/devc-pty=devc-pty
 /usr/bin/pdebug=pdebug
 /usr/sbin/qconn=qconn
-
-###########################################################################
-## sshd support
-###########################################################################
-/usr/sbin/sshd=sshd
-/usr/bin/scp=scp
-/usr/bin/ssh=ssh
-/usr/libexec/sftp-server=${QNX_TARGET}/${PROCESSOR}/usr/libexec/sftp-server
-ssh-keygen
-mkdir
-chmod
-touch
-waitfor
-
-[uid=0 gid=0 perms=0644 search=${QNX_TARGET}/etc/ssh] /etc/ssh/ssh_known_hosts=ssh_known_hosts
-
-[uid=0 gid=0 perms=0777] sshd_config={
-Protocol 2
-LoginGraceTime 600
-PermitRootLogin yes             # NOT SECURE, FOR DEBUGGING
-PermitEmptyPasswords yes        # NOT SECURE, FOR DEBUGGING
-UsePrivilegeSeparation no       # NOT SECURE, FOR DEBUGGING
-Subsystem       sftp    /usr/libexec/sftp-server
-}
-
-[perms=0755 uid=0 gid=0 type=dir] /var/chroot/sshd
-[type=link] /etc/ssh = /dev/shmem
-[type=link] /var/etc/ssh = /dev/shmem
-
-[uid=0 gid=0 perms=0644 search=${QNX_TARGET}/etc/ssh] /etc/ssh/ssh_known_hosts=ssh_known_hosts
-
-/root/.profile = {
-PS1='$(hostname)#'
-export SYSNAME=nto
-export TERM=xterm
-#export PATH=/proc/boot:/sbin:/bin:/usr/bin:/opt/bin/sbin:/usr/sbin
-#export LD_LIBRARY_PATH=/proc/boot:/lib:/usr/lib:/lib/dll:/opt/lib:/lib/dll/pci
-}
-
-[perms=0755] /scripts/ssh-start.sh = {
-#!/bin/sh
-
-with_umask ()
-\{
-    local oldmask ret
-    [ "$#" -ge 1 ] || return
-
-    oldmask=$(umask) || return
-    umask "$1" || return
-    shift
-
-    ret=0
-    "$@" || ret=$?
-
-    umask "$\{oldmask?\}"
-    return "$\{ret:?\}"
-\}
-
-tools_ssh_keygen ()
-\{
-    local ssh_etcdir ssh_vardir type filename etclink varkey
-    ssh_etcdir="/etc/ssh"
-    ssh_vardir="/var/etc/ssh"
-
-    for type in rsa
-    do
-        filename="ssh_host_$\{type:?\}_key"
-        etclink="$\{ssh_etcdir?\}/$\{filename:?\}"
-        varkey="$\{ssh_vardir?\}/$\{filename:?\}"
-
-        if [ ! -f "$\{etclink:?\}" ]  # link currently invalid
-        then
-            ssh-keygen -t "$\{type:?\}" -N '' -f "$\{varkey:?\}" || return
-        fi
-    done
-\}
-
-tools_sshd ()
-\{
-    local x
-    \{
-        cp /proc/boot/sshd_config /etc/ssh/
-        with_umask 022 tools_ssh_keygen
-        ssh_path=$(command -v sshd) && "$ssh_path"
-    \} &
-\}
-
-# This script is intended to run once/boot only, at startup
-running=/dev/shmem/ssh-start.run
-[ -e $running ] && exit
-
-tools_sshd;
-
-touch $running
-unset running
-
-}
 
 ###########################################################################
 ## Network services support
