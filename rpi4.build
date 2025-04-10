@@ -638,7 +638,7 @@ scp $CHECKSUM_FILE_ON_SERVER $INACTIVE_PARTITION/host_image.cksum || \{
     \}
 \}
 
-# 6. [manual power intervention before downloading new image] prompt the user to get ready for the downloading
+# 6. [manual power intervention before downloading new image] for TESTING purpose only
 echo "Press Enter to start downloading new image:"
 read dummy
 
@@ -652,7 +652,9 @@ scp $IMAGE_FILE_ON_SERVER $NEW_IMAGE || \{
     \}
 \}
 
-# #  [manual power intervention during downloading new image]
+# [manual power intervention before image verification] for TESTING purpose only
+echo "Press Enter to start verifying the new image:"
+read dummy
 
 # 8. verify the integrity of the new image:
 # 8.1 get the checksum of the new image and save it to a file
